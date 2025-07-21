@@ -8,6 +8,10 @@ import dill
 import pickle
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import r2_score
+import sys
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import f1_score  # Use a classification metric
+from networksecurity.exception.exception import NetworkSecurityException # Use your project's exception
 
 def read_yaml_file(file_path: str)->dict:
     try:
@@ -68,24 +72,42 @@ def load_numpy_array_data(file_path: str)->np.array:
     except Exception as e:
         raise exception.NetworkSecurityException(e,sys)
     
-def evaluate_models(X_train,y_train,X_test,y_test,models,param):
+# This is the code for your utils.py file
+
+
+
+def evaluate_models(X_train, y_train, X_test, y_test, models, param):
+    """
+    This function performs hyperparameter tuning for given models and returns
+    a report of their scores and the best estimator objects.
+    """
     try:
-        report={}
-        for i in range(len(list(models))):
-            model=list(models.values())[i]
-            para=param[list(models.keys())[i]]
-            gs=GridSearchCV(model,para,cv=3)
-            gs.fit(X_train,y_train)
+        model_report = {}
+        best_estimators = {}
 
-            model.set_params(**gs.best_params_)
-            model.fit(X_train,y_train)
+        for model_name, model in models.items():
+            # Get the parameters for the current model
+            params = param[model_name]
 
-            y_train_pred=model.predict(X_train)
-            y_test_pred=model.predict(X_test)
+            # Initialize GridSearchCV
+            gs = GridSearchCV(model, params, cv=3)
+            gs.fit(X_train, y_train)
 
-            train_model_score=r2_score(y_train,y_train_pred)
-            test_model_score=r2_score(y_test,y_test_pred)
-            report[list(models.keys())[i]]=test_model_score
-        return report
+            # Set the model to the best estimator found by the grid search
+            best_model = gs.best_estimator_
+            
+            # Evaluate the best model on the test set
+            y_test_pred = best_model.predict(X_test)
+            
+            # Use f1_score for classification
+            test_model_score = f1_score(y_test, y_test_pred)
+
+            # Store the score and the best model object
+            model_report[model_name] = test_model_score
+            best_estimators[model_name] = best_model
+
+        # Return both dictionaries after the loop is done
+        return model_report, best_estimators
+
     except Exception as e:
-        raise exception.NetworkSecurityException(e, sys)
+        raise NetworkSecurityException(e, sys)
