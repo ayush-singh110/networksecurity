@@ -35,6 +35,7 @@ database = client[DATA_INGESTION_DATABASE_NAME]
 collection = database[DATA_INGESTION_COLLECTION_NAME]
 
 app = FastAPI()
+port = int(os.environ.get("PORT", 10000))
 origins = ["*"]
 
 app.add_middleware(
