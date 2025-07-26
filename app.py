@@ -106,4 +106,4 @@ async def analyze_website(request: Request, website_url: str = Form(...)):
         })
 
 if __name__ == "__main__":
-    app_run(app, host='0.0.0.0', port=8080)
+    app_run(app, host='0.0.0.0', port=port)
