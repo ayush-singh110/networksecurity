@@ -1,5 +1,0 @@
-url,prediction,probability_phishing,probability_legitimate,error,features_extracted,missing_features
-https://www.google.com,1,0.546875,0.453125,,30,0
-https://www.microsoft.com,0,0.0078125,0.9921875,,30,0
-https://www.flipkart.com,0,0.28125,0.71875,,30,0
-http://east.dpsbangalore.edu.in/nios-admissions,0,0.1875,0.8125,,30,0
