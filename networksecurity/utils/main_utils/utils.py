@@ -4,7 +4,6 @@ import logging
 import os
 import sys
 import numpy as np
-import dill
 import pickle
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import r2_score
