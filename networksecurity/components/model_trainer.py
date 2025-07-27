@@ -22,10 +22,57 @@ from sklearn.ensemble import (
     RandomForestClassifier
 )
 import mlflow
-import dagshub
 import joblib
 import time
-dagshub.init(repo_owner='ayush-singh110', repo_name='networksecurity', mlflow=True)
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+# Conditional DagHub initialization
+def initialize_dagshub():
+    """Initialize DagHub only if authentication is available"""
+    try:
+        # Check if we're in a deployment environment (skip DagHub)
+        if (os.getenv('RENDER') or 
+            os.getenv('HEROKU') or 
+            os.getenv('RAILWAY_ENVIRONMENT') or 
+            os.getenv('VERCEL') or
+            os.getenv('NETLIFY')):
+            logger.info("Deployment environment detected. Skipping DagHub initialization.")
+            return False
+            
+        # Check if DagHub token is available
+        if os.getenv('DAGSHUB_TOKEN'):
+            import dagshub
+            dagshub.init(repo_owner='ayush-singh110', repo_name='networksecurity', mlflow=True)
+            logger.info("DagHub initialized successfully with token")
+            return True
+            
+        # Check if DagHub config file exists
+        config_path = os.path.expanduser('~/.dagshub/config')
+        if os.path.exists(config_path):
+            import dagshub
+            dagshub.init(repo_owner='ayush-singh110', repo_name='networksecurity', mlflow=True)
+            logger.info("DagHub initialized successfully with config file")
+            return True
+            
+        # Try to initialize anyway (for local development)
+        try:
+            import dagshub
+            dagshub.init(repo_owner='ayush-singh110', repo_name='networksecurity', mlflow=True)
+            logger.info("DagHub initialized successfully")
+            return True
+        except:
+            logger.info("No DagHub authentication found. Skipping initialization.")
+            return False
+        
+    except Exception as e:
+        logger.warning(f"DagHub initialization failed: {e}")
+        logger.info("Continuing without DagHub integration...")
+        return False
+
+# Initialize DagHub conditionally
+DAGSHUB_AVAILABLE = initialize_dagshub()
 
 class ModelTrainer:
     def __init__(self,model_trainer_config:ModelTrainerConfig,data_transformation_artifact:DataTransformationArtifact):
@@ -36,19 +83,36 @@ class ModelTrainer:
             raise exception.NetworkSecurityException(e,sys)
         
     def track_mlflow(self, best_model, classificationmetric):
-        with mlflow.start_run():
-            f1_score = classificationmetric.f1_score
-            precision_score = classificationmetric.precision_score
-            recall_score = classificationmetric.recall_score
+        """Track model metrics with MLflow if DagHub is available"""
+        if not DAGSHUB_AVAILABLE:
+            # Log metrics locally if DagHub is not available
+            logger.info(f"F1 Score: {classificationmetric.f1_score}")
+            logger.info(f"Precision: {classificationmetric.precision_score}")
+            logger.info(f"Recall: {classificationmetric.recall_score}")
+            return
+            
+        try:
+            with mlflow.start_run():
+                f1_score = classificationmetric.f1_score
+                precision_score = classificationmetric.precision_score
+                recall_score = classificationmetric.recall_score
 
-            mlflow.log_metric("f1_score", f1_score)
-            mlflow.log_metric("precision", precision_score)
-            mlflow.log_metric("recall_score", recall_score)
+                mlflow.log_metric("f1_score", f1_score)
+                mlflow.log_metric("precision", precision_score)
+                mlflow.log_metric("recall_score", recall_score)
 
-        # Save the model with a unique filename
-            model_filename = f"model_{int(time.time())}.pkl"
-            joblib.dump(best_model, model_filename)
-            mlflow.log_artifact(model_filename)
+                # Save the model with a unique filename
+                model_filename = f"model_{int(time.time())}.pkl"
+                joblib.dump(best_model, model_filename)
+                mlflow.log_artifact(model_filename)
+                
+                logger.info("Metrics logged to MLflow successfully")
+        except Exception as e:
+            logger.warning(f"Failed to log to MLflow: {e}")
+            # Fall back to local logging
+            logger.info(f"F1 Score: {classificationmetric.f1_score}")
+            logger.info(f"Precision: {classificationmetric.precision_score}")
+            logger.info(f"Recall: {classificationmetric.recall_score}")
         
         
     def train_model(self,X_train,y_train,X_test,y_test):
@@ -89,6 +153,7 @@ class ModelTrainer:
         best_model=best_estimators[best_model_name]
         y_train_pred=best_model.predict(X_train)
         classification_train_metric=get_classification_score(y_true=y_train,y_pred=y_train_pred)
+        
         #Track the mlflow
         self.track_mlflow(best_model,classification_train_metric)
 
@@ -103,7 +168,13 @@ class ModelTrainer:
         Network_Model=NetworkModel(preprocessor=preprocessor,model=best_model)
         save_object(self.model_trainer_config.trained_model_file_path,obj=Network_Model)
 
-        save_object("final_model/model.pkl",best_model)
+        # Save model to final_model directory for deployment
+        final_model_dir = "final_model"
+        os.makedirs(final_model_dir, exist_ok=True)
+        save_object(os.path.join(final_model_dir, "model.pkl"), best_model)
+        
+        # Also save the preprocessor to final_model directory
+        save_object(os.path.join(final_model_dir, "preprocessor.pkl"), preprocessor)
 
         #Model Trainer Artifact
         model_trainer_artifact=ModelTrainerArtifact(trained_model_file_path=self.model_trainer_config.trained_model_file_path,
@@ -112,6 +183,7 @@ class ModelTrainer:
 
         logging.info(f"Best model found on both train and test dataset is: {best_model_name} with score: {best_model_score}")
         return model_trainer_artifact
+        
     def initiate_model_trainer(self)->ModelTrainerArtifact:
         try:
             train_file_path=self.data_transformation_artifact.transformed_train_file_path
@@ -130,4 +202,3 @@ class ModelTrainer:
 
         except Exception as e:
             raise exception.NetworkSecurityException(e,sys)
-        
