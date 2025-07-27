@@ -50,10 +50,16 @@ mongo_db_url = os.getenv("MONGO_DB_URL")
 
 # Initialize MongoDB client with error handling
 try:
-    client = pymongo.MongoClient(mongo_db_url, tlsCAFile=ca)
-    database = client[DATA_INGESTION_DATABASE_NAME]
-    collection = database[DATA_INGESTION_COLLECTION_NAME]
-    logger.info("MongoDB connection established")
+    if mongo_db_url:
+        client = pymongo.MongoClient(mongo_db_url, tlsCAFile=ca)
+        database = client[DATA_INGESTION_DATABASE_NAME]
+        collection = database[DATA_INGESTION_COLLECTION_NAME]
+        logger.info("MongoDB connection established")
+    else:
+        logger.warning("MongoDB URL not provided")
+        client = None
+        database = None
+        collection = None
 except Exception as e:
     logger.error(f"MongoDB connection failed: {e}")
     client = None
@@ -61,7 +67,11 @@ except Exception as e:
     collection = None
 
 app = FastAPI(title="Network Security API", version="1.0.0")
+
+# Get port from environment - Render provides this automatically
 port = int(os.environ.get("PORT", 10000))
+logger.info(f"Starting on port: {port}")
+
 origins = ["*"]
 
 app.add_middleware(
@@ -78,13 +88,22 @@ async def index(request: Request):
         return templates.TemplateResponse("index.html", {"request": request})
     except Exception as e:
         logger.error(f"Error rendering index page: {e}")
-        return HTMLResponse("<h1>Network Security API</h1><p>API is running but templates not found</p>")
+        return HTMLResponse("""
+        <html>
+            <body>
+                <h1>Network Security API</h1>
+                <p>API is running successfully!</p>
+                <a href="/analyze">Analyze Website</a>
+            </body>
+        </html>
+        """)
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint for deployment monitoring"""
     return {
         "status": "healthy",
+        "port": port,
         "training_available": TRAINING_AVAILABLE,
         "mongodb_connected": client is not None
     }
@@ -116,9 +135,9 @@ async def analyze_form(request: Request):
             <body>
                 <h1>Website Analysis</h1>
                 <form method="post" action="/analyze">
-                    <label>Website URL:</label>
-                    <input type="url" name="website_url" required>
-                    <button type="submit">Analyze</button>
+                    <label>Website URL:</label><br>
+                    <input type="url" name="website_url" required style="width: 300px; padding: 5px;"><br><br>
+                    <button type="submit" style="padding: 10px 20px;">Analyze</button>
                 </form>
             </body>
         </html>
@@ -173,37 +192,34 @@ async def analyze_website(request: Request, website_url: str = Form(...)):
             })
         except Exception as template_error:
             # Fallback HTML response if templates are not available
+            feature_display = "<br>".join([f"<strong>{k}:</strong> {v}" for k, v in features.items()])
             return HTMLResponse(f"""
             <html>
                 <body>
                     <h1>Analysis Results</h1>
                     <p><strong>Website:</strong> {website_url}</p>
-                    <p><strong>Prediction:</strong> {prediction}</p>
+                    <p><strong>Prediction:</strong> <span style="color: {'green' if prediction == 'Safe' else 'red'}; font-weight: bold;">{prediction}</span></p>
                     <p><strong>Confidence:</strong> High</p>
                     <h3>Features:</h3>
-                    <pre>{features}</pre>
-                    <a href="/analyze">Analyze Another</a>
+                    <div style="background: #f5f5f5; padding: 10px; margin: 10px 0;">
+                        {feature_display}
+                    </div>
+                    <a href="/analyze">Analyze Another Website</a>
                 </body>
             </html>
             """)
             
     except Exception as e:
         logger.error(f"An error occurred during analysis: {e}")
-        try:
-            return templates.TemplateResponse("error.html", {
-                "request": request,
-                "error": str(e)
-            })
-        except:
-            return HTMLResponse(f"""
-            <html>
-                <body>
-                    <h1>Error</h1>
-                    <p>An error occurred during analysis: {str(e)}</p>
-                    <a href="/analyze">Try Again</a>
-                </body>
-            </html>
-            """)
+        return HTMLResponse(f"""
+        <html>
+            <body>
+                <h1>Error</h1>
+                <p>An error occurred during analysis: {str(e)}</p>
+                <a href="/analyze">Try Again</a>
+            </body>
+        </html>
+        """)
 
 # Add a simple API endpoint for programmatic access
 @app.post("/api/analyze")
@@ -233,5 +249,5 @@ async def api_analyze_website(website_url: str = Form(...)):
         return {"error": str(e)}, 500
 
 if __name__ == "__main__":
-    logger.info(f"Starting server on port {port}")
+    logger.info(f"Starting server on host 0.0.0.0 and port {port}")
     app_run(app, host='0.0.0.0', port=port)
