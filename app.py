@@ -13,23 +13,19 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
 
-# Load environment variables first
 load_dotenv()
 
-# Initialize logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Assuming your project structure is correct
 from networksecurity.exception import exception
 from networksecurity.utils.main_utils.utils import load_object
 from networksecurity.constant.training_pipeline import DATA_INGESTION_COLLECTION_NAME, DATA_INGESTION_DATABASE_NAME
 from networksecurity.utils.ml_utils.model.estimator import NetworkModel
 
-# Correctly import your feature extraction class
 from networksecurity.utils.feature_extraction import WebsiteFeatureExtractor
 
-# Conditional import for training pipeline
 try:
     from networksecurity.pipeline.training_pipeline import TrainingPipeline
     TRAINING_AVAILABLE = True
@@ -41,14 +37,11 @@ except Exception as e:
     logger.warning(f"Training pipeline import failed: {e}")
     TRAINING_AVAILABLE = False
 
-# Initialize templates
 templates = Jinja2Templates(directory="./templates")
 
-# MongoDB setup
 ca = certifi.where()
 mongo_db_url = os.getenv("MONGO_DB_URL")
 
-# Initialize MongoDB client with error handling
 try:
     if mongo_db_url:
         client = pymongo.MongoClient(mongo_db_url, tlsCAFile=ca)
@@ -68,7 +61,6 @@ except Exception as e:
 
 app = FastAPI(title="Network Security API", version="1.0.0")
 
-# Get port from environment - Render provides this automatically
 port = int(os.environ.get("PORT", 10000))
 logger.info(f"Starting on port: {port}")
 
@@ -146,16 +138,16 @@ async def analyze_form(request: Request):
 @app.post("/analyze", response_class=HTMLResponse)
 async def analyze_website(request: Request, website_url: str = Form(...)):
     try:
-        # Initialize feature extractor
+        
         extractor = WebsiteFeatureExtractor(website_url)
         
-        # Extract all features with one simple call
+        
         features = extractor.extract_features()
         
-        # Convert to DataFrame for prediction
+       
         df = pd.DataFrame([features])
         
-        # Load model and make prediction
+       
         try:
             preprocessor = load_object("final_model/preprocessor.pkl")
             final_model = load_object("final_model/model.pkl")
@@ -177,11 +169,11 @@ async def analyze_website(request: Request, website_url: str = Form(...)):
             </html>
             """)
         
-        # Prepare results for display
+
         results = {
             "website_url": website_url,
             "prediction": prediction,
-            "confidence": "High",  # Placeholder for confidence score
+            "confidence": "High",  
             "features": features
         }
         
@@ -191,7 +183,7 @@ async def analyze_website(request: Request, website_url: str = Form(...)):
                 "results": results
             })
         except Exception as template_error:
-            # Fallback HTML response if templates are not available
+            
             feature_display = "<br>".join([f"<strong>{k}:</strong> {v}" for k, v in features.items()])
             return HTMLResponse(f"""
             <html>
@@ -221,7 +213,7 @@ async def analyze_website(request: Request, website_url: str = Form(...)):
         </html>
         """)
 
-# Add a simple API endpoint for programmatic access
+
 @app.post("/api/analyze")
 async def api_analyze_website(website_url: str = Form(...)):
     """API endpoint for programmatic website analysis"""

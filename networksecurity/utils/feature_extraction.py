@@ -9,7 +9,6 @@ import tldextract
 from urllib.parse import urlparse, urljoin
 import re
 
-# To suppress only the InsecureRequestWarning from requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -23,15 +22,15 @@ class WebsiteFeatureExtractor:
         try:
             self.response = requests.get(url, timeout=10, verify=False, allow_redirects=True)
             self.soup = BeautifulSoup(self.response.text, 'html.parser')
-            # The final URL after any redirects
+            
             self.final_url = self.response.url
         except (requests.exceptions.RequestException, socket.error) as e:
-            # Handle cases where the site is down or the URL is invalid
+            
             self.response = None
             self.soup = None
             self.final_url = url
 
-    # 1. URL-Based Features
+    
     def has_ip_address(self):
         """Check if URL's domain is an IP address."""
         try:
@@ -70,21 +69,21 @@ class WebsiteFeatureExtractor:
         """Count the number of subdomains."""
         subdomain = tldextract.extract(self.url).subdomain
         if subdomain:
-            # Adjusting to phishing dataset logic: 1 for 1, 0 for 2, 1 for >2
+            
             count = len(subdomain.split('.'))
             if count == 1:
                 return 0
             elif count == 2:
                 return 1
             else:
-                return 1 # Or could be a higher value if your model expects it
+                return 1
         return 0
         
     def check_https_token(self):
         """Check if 'https' is part of the domain name."""
         return 1 if 'https' in self.domain.lower() else 0
 
-    # 2. Domain-Based Features
+  
     def check_ssl_trustworthiness(self):
         """Checks the SSL certificate issuer for trustworthiness."""
         try:
@@ -139,7 +138,7 @@ class WebsiteFeatureExtractor:
         except socket.gaierror:
             return 0
 
-    # 3. Content-Based Features
+    
     def check_favicon(self):
         """Check if the favicon is loaded from an external domain."""
         if not self.soup: return 0
@@ -235,14 +234,12 @@ class WebsiteFeatureExtractor:
         if not self.soup: return 0
         return 1 if self.soup.find_all('iframe') else 0
         
-    # --- Start of Placeholder & Aligned Methods ---
-    # These methods are added or aliased to match your app.py's expectations.
-    # The logic for MISSING methods must be implemented by you.
+   
 
     def check_ssl_final_state(self):
         """Alias for SSL check. A value > 1 yr is good (1), else (-1)."""
         days_left = self.get_domain_time_to_expiry()
-        if days_left == 0: # Could be error or no data
+        if days_left == 0: 
              return 0
         return 1 if days_left >= 365 else -1
 
@@ -258,7 +255,7 @@ class WebsiteFeatureExtractor:
         elif 22 <= ratio < 61:
             return 1
         else:
-            return 1 # Or a different value based on model training
+            return 1 
 
     def check_anchor_urls(self):
         """Alias for anchor URL ratio. A high ratio is suspicious."""
@@ -268,10 +265,10 @@ class WebsiteFeatureExtractor:
         elif 31 <= ratio < 67:
             return 1
         else:
-            return 1 # Or a different value based on model training
+            return 1 
 
     def count_links_in_tags(self):
-        # <<< MISSING: Implement logic to count links in <Meta>, <Script>, and <Link> tags
+        
         return 0
 
     def check_abnormal_url(self):
@@ -279,31 +276,27 @@ class WebsiteFeatureExtractor:
         return 1 if self.domain in self.url else 0
 
     def check_mouseover(self):
-        # <<< MISSING: Implement logic to check for on_mouseover events that change the status bar
+       
         if not self.response: return 0
         return 1 if "onmouseover" in self.response.text.lower() else 0
         
     def estimate_web_traffic(self):
-        # <<< MISSING: Implement logic to estimate web traffic (e.g., using an API)
+        
         return 0
 
     def get_page_rank(self):
-        # <<< MISSING: Implement logic to get the PageRank of the URL (Note: Google's PR is deprecated)
+       
         return 0
 
     def check_google_index(self):
-        # <<< MISSING: Implement logic to check if the page is indexed by Google (e.g., via scraping or API)
+     
         return 1
 
     def count_external_links(self):
-        # <<< MISSING: Implement logic to count external links
         return 0
 
     def check_statistical_report(self):
-        # <<< MISSING: Implement logic to check against phishing datasets (e.g., PhishTank)
         return 0
-
-    # --- End of Placeholder & Aligned Methods ---
 
     def extract_features(self):
         """

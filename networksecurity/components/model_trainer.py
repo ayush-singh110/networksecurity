@@ -25,14 +25,12 @@ import mlflow
 import joblib
 import time
 
-# Set up logging
 logger = logging.getLogger(__name__)
 
-# Conditional DagHub initialization
 def initialize_dagshub():
     """Initialize DagHub only if authentication is available"""
     try:
-        # Check if we're in a deployment environment (skip DagHub)
+        
         if (os.getenv('RENDER') or 
             os.getenv('HEROKU') or 
             os.getenv('RAILWAY_ENVIRONMENT') or 
@@ -41,14 +39,14 @@ def initialize_dagshub():
             logger.info("Deployment environment detected. Skipping DagHub initialization.")
             return False
             
-        # Check if DagHub token is available
+        
         if os.getenv('DAGSHUB_TOKEN'):
             import dagshub
             dagshub.init(repo_owner='ayush-singh110', repo_name='networksecurity', mlflow=True)
             logger.info("DagHub initialized successfully with token")
             return True
             
-        # Check if DagHub config file exists
+       
         config_path = os.path.expanduser('~/.dagshub/config')
         if os.path.exists(config_path):
             import dagshub
@@ -56,7 +54,7 @@ def initialize_dagshub():
             logger.info("DagHub initialized successfully with config file")
             return True
             
-        # Try to initialize anyway (for local development)
+        
         try:
             import dagshub
             dagshub.init(repo_owner='ayush-singh110', repo_name='networksecurity', mlflow=True)
@@ -71,7 +69,7 @@ def initialize_dagshub():
         logger.info("Continuing without DagHub integration...")
         return False
 
-# Initialize DagHub conditionally
+
 DAGSHUB_AVAILABLE = initialize_dagshub()
 
 class ModelTrainer:
@@ -83,9 +81,8 @@ class ModelTrainer:
             raise exception.NetworkSecurityException(e,sys)
         
     def track_mlflow(self, best_model, classificationmetric):
-        """Track model metrics with MLflow if DagHub is available"""
         if not DAGSHUB_AVAILABLE:
-            # Log metrics locally if DagHub is not available
+            
             logger.info(f"F1 Score: {classificationmetric.f1_score}")
             logger.info(f"Precision: {classificationmetric.precision_score}")
             logger.info(f"Recall: {classificationmetric.recall_score}")
@@ -101,7 +98,6 @@ class ModelTrainer:
                 mlflow.log_metric("precision", precision_score)
                 mlflow.log_metric("recall_score", recall_score)
 
-                # Save the model with a unique filename
                 model_filename = f"model_{int(time.time())}.pkl"
                 joblib.dump(best_model, model_filename)
                 mlflow.log_artifact(model_filename)
@@ -109,7 +105,6 @@ class ModelTrainer:
                 logger.info("Metrics logged to MLflow successfully")
         except Exception as e:
             logger.warning(f"Failed to log to MLflow: {e}")
-            # Fall back to local logging
             logger.info(f"F1 Score: {classificationmetric.f1_score}")
             logger.info(f"Precision: {classificationmetric.precision_score}")
             logger.info(f"Recall: {classificationmetric.recall_score}")
@@ -143,10 +138,8 @@ class ModelTrainer:
             }
         }
         model_report, best_estimators = evaluate_models(X_train=X_train,y_train=y_train,X_test=X_test,y_test=y_test,models=models,param=param)
-        #To get best model score from dict
         best_model_score=max(sorted(model_report.values()))
 
-        #To get best model name from dict
         best_model_name=list(model_report.keys())[
             list(model_report.values()).index(best_model_score)
         ]
@@ -154,7 +147,6 @@ class ModelTrainer:
         y_train_pred=best_model.predict(X_train)
         classification_train_metric=get_classification_score(y_true=y_train,y_pred=y_train_pred)
         
-        #Track the mlflow
         self.track_mlflow(best_model,classification_train_metric)
 
         y_test_pred=best_model.predict(X_test)
@@ -168,15 +160,12 @@ class ModelTrainer:
         Network_Model=NetworkModel(preprocessor=preprocessor,model=best_model)
         save_object(self.model_trainer_config.trained_model_file_path,obj=Network_Model)
 
-        # Save model to final_model directory for deployment
         final_model_dir = "final_model"
         os.makedirs(final_model_dir, exist_ok=True)
         save_object(os.path.join(final_model_dir, "model.pkl"), best_model)
         
-        # Also save the preprocessor to final_model directory
         save_object(os.path.join(final_model_dir, "preprocessor.pkl"), preprocessor)
 
-        #Model Trainer Artifact
         model_trainer_artifact=ModelTrainerArtifact(trained_model_file_path=self.model_trainer_config.trained_model_file_path,
                              train_metric_artifact=classification_train_metric,
                              test_metric_artifact=classification_test_metric)
@@ -189,7 +178,6 @@ class ModelTrainer:
             train_file_path=self.data_transformation_artifact.transformed_train_file_path
             test_file_path=self.data_transformation_artifact.transformed_test_file_path
 
-            #loading training array and testing array
             train_arr=load_numpy_array_data(train_file_path)
             test_arr=load_numpy_array_data(test_file_path)
             X_train = train_arr[:, :-1]
