@@ -63,7 +63,7 @@ cd networksecurity
 
 2. **Create a virtual environment**
 ```bash
-python -m venv myenv
+python -m venv venv
 ```
 
 3. **Activate the virtual environment**
