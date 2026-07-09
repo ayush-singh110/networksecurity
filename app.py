@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request, Form
 from fastapi.responses import Response, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from starlette.responses import RedirectResponse
 
 load_dotenv()
@@ -60,6 +61,7 @@ except Exception as e:
     collection = None
 
 app = FastAPI(title="Network Security API", version="1.0.0")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 port = int(os.environ.get("PORT", 10000))
 logger.info(f"Starting on port: {port}")
