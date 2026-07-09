@@ -1,6 +1,7 @@
 import sys
 import os
 import certifi
+from pathlib import Path
 from dotenv import load_dotenv
 import pymongo
 import logging
@@ -38,7 +39,12 @@ except Exception as e:
     logger.warning(f"Training pipeline import failed: {e}")
     TRAINING_AVAILABLE = False
 
-templates = Jinja2Templates(directory="./templates")
+BASE_DIR = Path(__file__).resolve().parent
+TEMPLATES_DIR = BASE_DIR / "templates"
+STATIC_DIR = BASE_DIR / "static"
+MODEL_DIR = BASE_DIR / "final_model"
+
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 ca = certifi.where()
 mongo_db_url = os.getenv("MONGO_DB_URL")
@@ -61,7 +67,7 @@ except Exception as e:
     collection = None
 
 app = FastAPI(title="Network Security API", version="1.0.0")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 port = int(os.environ.get("PORT", 10000))
 logger.info(f"Starting on port: {port}")
@@ -151,8 +157,8 @@ async def analyze_website(request: Request, website_url: str = Form(...)):
         
        
         try:
-            preprocessor = load_object("final_model/preprocessor.pkl")
-            final_model = load_object("final_model/model.pkl")
+            preprocessor = load_object(str(MODEL_DIR / "preprocessor.pkl"))
+            final_model = load_object(str(MODEL_DIR / "model.pkl"))
             network_model = NetworkModel(preprocessor=preprocessor, model=final_model)
             
             y_pred = network_model.predict(df)
@@ -224,8 +230,8 @@ async def api_analyze_website(website_url: str = Form(...)):
         features = extractor.extract_features()
         df = pd.DataFrame([features])
         
-        preprocessor = load_object("final_model/preprocessor.pkl")
-        final_model = load_object("final_model/model.pkl")
+        preprocessor = load_object(str(MODEL_DIR / "preprocessor.pkl"))
+        final_model = load_object(str(MODEL_DIR / "model.pkl"))
         network_model = NetworkModel(preprocessor=preprocessor, model=final_model)
         
         y_pred = network_model.predict(df)
