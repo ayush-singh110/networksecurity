@@ -80,7 +80,11 @@ class ModelTrainer:
         except Exception as e:
             raise exception.NetworkSecurityException(e,sys)
         
-    def track_mlflow(self, best_model, classificationmetric):
+    def track_mlflow(self, best_model, classificationmetric, metric_stage="Metrics"):
+        print(f"{metric_stage} -> F1 Score: {classificationmetric.f1_score}")
+        print(f"{metric_stage} -> Precision: {classificationmetric.precision_score}")
+        print(f"{metric_stage} -> Recall: {classificationmetric.recall_score}")
+
         if not DAGSHUB_AVAILABLE:
             
             logger.info(f"F1 Score: {classificationmetric.f1_score}")
@@ -147,12 +151,12 @@ class ModelTrainer:
         y_train_pred=best_model.predict(X_train)
         classification_train_metric=get_classification_score(y_true=y_train,y_pred=y_train_pred)
         
-        self.track_mlflow(best_model,classification_train_metric)
+        self.track_mlflow(best_model,classification_train_metric, "Training")
 
         y_test_pred=best_model.predict(X_test)
         classification_test_metric=get_classification_score(y_true=y_test,y_pred=y_test_pred)
 
-        self.track_mlflow(best_model,classification_test_metric)
+        self.track_mlflow(best_model,classification_test_metric, "Test")
 
         preprocessor=load_object(file_path=self.data_transformation_artifact.transformed_object_file_path)
         model_dir_path=os.path.dirname(self.model_trainer_config.trained_model_file_path)

@@ -1,0 +1,93 @@
+' "Abnormal_URL"':
+  drift_status: false
+  p_value: 0.1770351493883074
+' "DNSRecord"':
+  drift_status: false
+  p_value: 0.7860683696901033
+' "Domain_registeration_length"':
+  drift_status: false
+  p_value: 0.8622798411449777
+' "Favicon"':
+  drift_status: false
+  p_value: 0.9563660841655501
+' "Google_Index"':
+  drift_status: false
+  p_value: 0.9935243434380693
+' "HTTPS_token"':
+  drift_status: false
+  p_value: 0.22596901220203805
+' "Iframe"':
+  drift_status: false
+  p_value: 0.9990438890770315
+' "Links_in_tags"':
+  drift_status: false
+  p_value: 0.9964705532516113
+' "Links_pointing_to_page"':
+  drift_status: false
+  p_value: 0.18455754591332144
+' "Page_Rank"':
+  drift_status: false
+  p_value: 0.9999836499887566
+' "Prefix_Suffix"':
+  drift_status: false
+  p_value: 1.0
+' "Redirect"':
+  drift_status: false
+  p_value: 1.0
+' "Request_URL"':
+  drift_status: false
+  p_value: 0.3846599802742159
+' "Result"':
+  drift_status: false
+  p_value: 1.0
+' "RightClick"':
+  drift_status: false
+  p_value: 0.9999999998789996
+' "SFH"':
+  drift_status: false
+  p_value: 0.9628916164648135
+' "SSLfinal_State"':
+  drift_status: false
+  p_value: 0.9999654772410788
+' "Shortining_Service"':
+  drift_status: false
+  p_value: 0.44566877193471394
+' "Statistical_report"':
+  drift_status: false
+  p_value: 0.9236254567999284
+' "Submitting_to_email"':
+  drift_status: false
+  p_value: 0.9958579353974752
+' "URL_Length"':
+  drift_status: false
+  p_value: 0.323278772120702
+' "URL_of_Anchor"':
+  drift_status: false
+  p_value: 0.8923284435665428
+' "age_of_domain"':
+  drift_status: false
+  p_value: 0.8747000547537782
+' "double_slash_redirecting"':
+  drift_status: false
+  p_value: 0.918796249345484
+' "having_At_Symbol"':
+  drift_status: false
+  p_value: 1.0
+' "having_Sub_Domain"':
+  drift_status: false
+  p_value: 0.9964705532516113
+' "on_mouseover"':
+  drift_status: false
+  p_value: 0.9999999999598222
+' "popUpWidnow"':
+  drift_status: false
+  p_value: 0.8151359073090507
+' "port"':
+  drift_status: false
+  p_value: 0.9943908690886974
+' "web_traffic"':
+  drift_status: false
+  p_value: 0.9628916164648135
+having_IP_Address:
+  drift_status: false
+  p_value: 1.0
